@@ -394,6 +394,63 @@ mean.accuracies <- mean(accuracies.rf1)##0.8317077
 lci <- mean(accuracies.rf1) - sd(accuracies.rf1) * 1.96 ## 0.7848956
 uci <- mean(accuracies.rf1) + sd(accuracies.rf1) * 1.96 ## 0.8785198
 
+##Now, predict response for the test data
+
+predict.test <- predict(object = RFfit2, newdata = Test.new)
+
+# Create a data frame with just PassengerId and Survived to submit to Kaggle. Note that I assign "predict.test" to "Survived"
+titanic_solution <- data.frame(PassengerId = Test.new$PassengerId, Survived = predict.test)
+
+# Write your solution to a csv file with the name my_solution.csv
+write.csv(titanic_solution, file = "titanic_solution.csv", row.names = FALSE) ##This submission
+##resulted to score of .7799
+
+##To improve the score, would try adding one more variable
+
+Maindf$Child <- ifelse(Maindf$Age <18, 1,0)
+Maindf$Child <- factor(Maindf$Child, levels = c(1,0))
+levels(Maindf$Child)
+
+Train.new <- Maindf[Maindf$Flag == 'Train',]
+Test.new <- Maindf[Maindf$Flag == 'Test',]
+
+#Again fit the random forest model
+
+RFfit3 <- randomForest(Survived ~ Pclass + Sex + Age + SibSp + Parch + Title  + Embarked  
+                       + Fare + FmlyType + Child, 
+                       data = Train.new, ntree = 100, set.seed(111), importance = TRUE)
+
+Response4  <- predict(RFfit3, newdata = Train.new)
+confusionMatrix(Response4,Train.new$Survived) ##0.9282, no improvements in terms of predicting
+                                              ##capability
+
+Reference
+#Prediction   1   0
+#1          289  11
+#0          53  538
+
+#Lets try a submssion with DT
+##Now, predict response for the test data
+
+predict.test1 <- predict(object = DTfit2, newdata = Test.new, type = "class")
+
+# Create a data frame with just PassengerId and Survived to submit to Kaggle. Note that I assign "predict.test" to "Survived"
+titanic_solution1 <- data.frame(PassengerId = Test.new$PassengerId, Survived = predict.test1)
+
+# Write your solution to a csv file with the name my_solution.csv
+write.csv(titanic_solution1, file = "titanic_solution1.csv", row.names = FALSE) ##This submission
+##resulted to score of .79904, performs better than random forest
+
+##Add the child variable to the Decsion tree
+
+DFfit3 <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Title  + Embarked  
+                + Fare + FmlyType + Child, 
+                data = Train.new, method = "class")
+
+fancyRpartPlot(DFfit3)
+
+Response5 <- predict(DFfit3,newdata = Train.new, type = "class")
 
 
+confusionMatrix(Response5,Train$Survived) ##0.8496, no improvements in accuracy.
 
